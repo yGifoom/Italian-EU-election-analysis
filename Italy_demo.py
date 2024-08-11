@@ -27,9 +27,19 @@ df_comuni = gpd.read_file(filename="data/Limiti01012019_g/Com01012019_g/Com01012
 # ax.figure.savefig("plots/italy_cities.png", bbox_inches="tight")
 
 ## checking if comuni contains all the places people have voted in
-
 def clean(s:str) -> str:
     return s.lower().strip()
+
+def b_clean(s:str) -> str:
+    s = clean(s)
+    if "/" in s:
+        s = s[:s.find("/")]
+        
+    while "-" in s:
+        s = s.replace("-", " ")
+    
+    s = s.replace("   ", " ")
+    return s
 
 def dumb_decode(s:str) -> str:
     s = clean(s).encode().replace(b"\xa3\xc2", b"").decode("utf8")
@@ -133,6 +143,12 @@ suppl, df_comuni_cut = fuse(["molvena", "mason vicentino"], "colceresa", suppl)
 
 suppl, df_comuni_cut = fuse(["verre's"], "verres", suppl)
 
+# fix for the european votes naming horrors
+#suppl, df_comuni_cut = fuse(["reggio di calabria"], "reggio calabria", suppl)
+
+#suppl, df_comuni_cut = fuse(["cassano all'ionio"], "cassano allo ionio", suppl)
+
+#suppl, df_comuni_cut = fuse(["staletti'"], "staletti", suppl)
 
 df_comuni_cut = pd.concat([df_comuni_cut, pd.DataFrame(suppl)])
 comuni_i = set(df_comuni_cut["COMUNE"])
@@ -144,4 +160,28 @@ print(f"n of comuni in voting: {len(comuni_v)}, istat: {len(comuni_i)}")
 print(f"diff in votes are {len(diff_vi)}: \n{diff_vi}")
 print(f"diff in istat are {len(diff_iv)}: \n{diff_iv}")
 
-df_comuni_cut.to_csv("data/istat_clean.csv")
+## comment or not to wite csv
+# df_comuni_cut.to_csv("data/istat_clean.csv")
+
+## cleaning Preferenze europee as well
+with open("data/PreferenzeEuropee_2019.csv", "r") as f:
+    prfz = pd.read_csv(f)
+print(prfz.columns)
+prfz = prfz.drop(["DATAELEZIONE","CODTIPOELEZIONE"], axis=1)
+prfz["luogonascita"] = prfz["luogonascita"].apply(lambda x: x[:x.find("(")] if "(" in x else x)
+for c in ["circoscrizione","regione","provincia","comune", "luogonascita"]:
+    prfz[c] = prfz[c].apply(b_clean)
+
+# they fucked up the spelling
+# TODO: right now this rewrites the whole row to the new string when i would like it to chane only luogodinascita
+prfz[prfz["luogonascita"] == "reggio calabria"] = "reggio di calabria"
+prfz[prfz["luogonascita"] == "cassano allo ionio"] = "cassano all'ionio"
+prfz[prfz["luogonascita"] == "staletti"] = "staletti'"
+
+prfz["nome e cognome"] = prfz["nome"] + " " + (prfz["cognome"])
+prfz = prfz.drop(["nome","cognome"], axis=1)
+
+lg_n = set(prfz["luogonascita"])
+print(f"here are all the non italian birthplaces: \n{lg_n.difference(comuni_i)}")
+## decomment for csv
+# prfz.to_csv("data/preferences_clean.csv")
