@@ -24,16 +24,17 @@ def congregate(congregated: list, i: int)-> None:
             if int(data["PREFERENZE"][i]) > 0:
                 el["preferenze"][data["comune"][i]] = data["PREFERENZE"][i]
                 return
-    el = {
-        "nome e cognome": data["nome e cognome"][i],
-        "partito": data["descrlista"],
-        "datanascita": data["datanascita"][i],
-        "luogonascita": data["luogonascita"][i],
-        "sesso": data["sesso"][i],
-        "eletto": data["CODTIPOELETTO"][i],
-        "preferenze": {data["comune"][i] : data["PREFERENZE"][i]},
-    }
-    congregated.append(el)
+    if int(data["PREFERENZE"][i]) > 0:
+        el = {
+            "nome e cognome": data["nome e cognome"][i],
+            "partito": data["descrlista"][i],
+            "datanascita": data["datanascita"][i],
+            "luogonascita": data["luogonascita"][i],
+            "sesso": data["sesso"][i],
+            "eletto": data["CODTIPOELETTO"][i],
+            "preferenze": {data["comune"][i] : data["PREFERENZE"][i]},
+        }
+        congregated.append(el)
 
 cndts = list() # should hold candidate name, birth, party, {town1: nvotes, town2: nvotes....}
 
@@ -43,11 +44,11 @@ with open("data/preferences_clean.csv", "r") as f:
 
 data = prfcs.to_dict()
 
-for i in range(len(data["comune"])):
+for i in range(len(data["nome e cognome"])):
     congregate(cndts, i)
 
 ## decomment for csv
-# pd.DataFrame(cndts).to_csv("data/candidates_clean.csv")
+pd.DataFrame(cndts).to_csv("data/candidates_clean.csv")
 
 ## cleaning european general data
 with open("data/europee-20190526.csv", "r") as f:
@@ -60,9 +61,16 @@ for c in ["CIRCOSCRIZIONE", "REGIONE", "PROVINCIA", "COMUNE"]:
 
 # they fucked up the spelling
 # TODO: right now this rewrites the whole row to the new string when i would like it to chane only COMUNE
-prfz[prfz["COMUNE"] == "reggio calabria"]["COMUNE"] = "reggio di calabria"
-prfz[prfz["COMUNE"] == "cassano allo ionio"]["COMUNE"] = "cassano all'ionio"
-prfz[prfz["COMUNE"] == "staletti"]["COMUNE"] = "staletti'"
+filter = {
+    "reggio calabria": "reggio di calabria", 
+    "cassano allo ionio": "cassano all'ionio", 
+    "staletti": "staletti'",
+    "negrar": "negrar di valpolicella",
+    "barcellona p.g.": "barcellona pozzo di gotto",
+    "valsaviore": "cevo" # valsaviore does not exist, cevo is one of the comuni that it became
+    } 
+
+prfz.replace(filter, regex=True, inplace=True)
 
 ## decomment for csv
-# prfz.to_csv("data/europee_clean.csv")
+prfz.to_csv("data/europee_clean.csv")

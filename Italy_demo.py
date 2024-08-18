@@ -161,7 +161,7 @@ print(f"diff in votes are {len(diff_vi)}: \n{diff_vi}")
 print(f"diff in istat are {len(diff_iv)}: \n{diff_iv}")
 
 ## comment or not to wite csv
-# df_comuni_cut.to_csv("data/istat_clean.csv")
+df_comuni_cut.to_csv("data/istat_clean.csv")
 
 ## cleaning Preferenze europee as well
 with open("data/PreferenzeEuropee_2019.csv", "r") as f:
@@ -174,9 +174,17 @@ for c in ["circoscrizione","regione","provincia","comune", "luogonascita"]:
 
 # they fucked up the spelling
 # TODO: right now this rewrites the whole row to the new string when i would like it to chane only luogodinascita
-prfz[prfz["luogonascita"] == "reggio calabria"] = "reggio di calabria"
-prfz[prfz["luogonascita"] == "cassano allo ionio"] = "cassano all'ionio"
-prfz[prfz["luogonascita"] == "staletti"] = "staletti'"
+filter = {
+    "reggio calabria": "reggio di calabria", 
+    "cassano allo ionio": "cassano all'ionio", 
+    "staletti": "staletti'",
+    "negrar": "negrar di valpolicella",
+    "barcellona p.g.": "barcellona pozzo di gotto",
+    "valsaviore": "cevo" # valsaviore does not exist, cevo is one of the comuni that it became
+    } 
+
+prfz.replace(filter, regex=True, inplace=True)
+
 
 prfz["nome e cognome"] = prfz["nome"] + " " + (prfz["cognome"])
 prfz = prfz.drop(["nome","cognome"], axis=1)
@@ -184,4 +192,4 @@ prfz = prfz.drop(["nome","cognome"], axis=1)
 lg_n = set(prfz["luogonascita"])
 print(f"here are all the non italian birthplaces: \n{lg_n.difference(comuni_i)}")
 ## decomment for csv
-# prfz.to_csv("data/preferences_clean.csv")
+prfz.to_csv("data/preferences_clean.csv")
