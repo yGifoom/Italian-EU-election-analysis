@@ -24,7 +24,7 @@ but on the total of preferences for the same party in a comune is > p% (E.g. p=5
 ### Dataset pre processing __GIOVANNI__
 [x] get the dataset in csv
 [x] organize dataset for python parsing 
-[] examine the dataset and clean it (17/08)
+[x] examine the dataset and clean it (17/08)
 
 ### division of comuni by population __GIOVANNI__ (19/08)
 [] how the preferences are spread out in a cumune by population 
@@ -47,3 +47,10 @@ but on the total of preferences for the same party in a comune is > p% (E.g. p=5
 (how are votes distributed in a party?)
 
 ## Conclusions
+
+
+
+#### misceleneous
+- majority of people did not express preferenze
+- for visualization I random sampled from the population weighting on the population of the settlement,
+correlation was kept at the same values roughly + some variation
