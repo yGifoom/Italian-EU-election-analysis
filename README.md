@@ -64,3 +64,5 @@ correlation was kept at the same values roughly + some variation
 
 - there seems to be no correlation between area/population/density and homogeneousness of votes
 perhaps there is too much noise, clustering by parties might make this better
+
+- how much compromise must parties have to reach a high consensus? depending on the circoscrizione this number changes.

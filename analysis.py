@@ -30,34 +30,93 @@ corr = first_sample[["ELETTORI", "perc_voto"]].corr(method="pearson")
 print(corr)
 
 
-# best n parties?
-m = 10
-for n in range(1, m):
-    # Sort the dataframe by "comune" and "voti" in descending order
-    df_grouped = erp.sort_values(by=['COMUNE', 'VOTI_LISTA'], ascending=[True, False])
+    # Assign colors to each party
+party_colors = {
+    'LEGA SALVINI PREMIER': '#27d93f', 
+    'PARTITO DEMOCRATICO': '#e81e1e', 
+    'MOVIMENTO 5 STELLE': '#facc00',  
+    "FRATELLI D'ITALIA": '#a3a3a3', 
+    'FORZA ITALIA': '#4557ff',  
+}
+for l in erp["LISTA"].unique(): 
+    if l not in party_colors:
+        party_colors[l] = "#000000"
+        
+# best m parties per circoscrizione?
+m = 3
+for n in range(1, m+1):
 
+
+    # Map the colors to the dataframe
+    erp['color'] = erp['LISTA'].map(party_colors)
+
+    # Group by "COMUNE" and "LISTA", summing the "VOTI_LISTA"
+    df_grouped = erp.groupby(["CIRCOSCRIZIONE", "PROVINCIA", 'COMUNE', 'LISTA'], as_index=False).agg({'VOTI_LISTA': 'sum', 'VOTANTI': 'first', 'color': 'first'})
+
+    # Sort by "COMUNE" and "VOTI_LISTA" in descending order
+    df_grouped = df_grouped.sort_values(['COMUNE', 'VOTI_LISTA'], ascending=[True, False])
+
+    print(df_grouped)
+    print(df_grouped.columns)
+    
     # Select the top 2 parties for each comune
-    df_top2 = df_grouped.groupby(['COMUNE', "PROVINCIA"]).head(n)
+    df_topn = df_grouped.groupby(["CIRCOSCRIZIONE", "PROVINCIA", 'COMUNE'], as_index=False).head(n)
 
-    # Sum the votes of the top 2 parties for each comune
-    df_result = df_top2.groupby(['COMUNE', "PROVINCIA"]).agg({'VOTI_LISTA': 'sum', 'VOTANTI': 'first'}).reset_index()
-    df_result["perc_voto"] = df_result["VOTI_LISTA"] / df_result["VOTANTI"]
-    print(df_result)
+    print(df_topn)
+    print(df_topn.columns)
+    
+    # Function to calculate weighted color
+    def weighted_color(voti_list, colors):
+        total_votes = voti_list.sum()
+        weighted_rgb = [0, 0, 0]
+        
+        for voti, color in zip(voti_list, colors):
+            color = color.lstrip('#')
+            rgb = [int(color[i:i+2], 16) for i in (0, 2, 4)]
+            weight = voti / total_votes
+            weighted_rgb = [weighted_rgb[i] + rgb[i] * weight for i in range(3)]
+        
+        weighted_color_hex = '#{:02x}{:02x}{:02x}'.format(int(weighted_rgb[0]), int(weighted_rgb[1]), int(weighted_rgb[2]))
+        return weighted_color_hex
 
-    df_final = pd.merge(df_result, cmn[["COMUNE", "SHAPE_AREA"]], on='COMUNE', how='left')
+    # Apply the weighted color calculation
+    df_topn_grouped = df_topn.groupby(["CIRCOSCRIZIONE", "PROVINCIA", 'COMUNE'], as_index=False).agg({
+        'VOTI_LISTA': 'sum', 
+        'VOTANTI': 'first', 
+        "color": lambda x: weighted_color(df_topn.loc[x.index, 'VOTI_LISTA'], x)})
+
+    df_topn_grouped["perc_voti"] = df_topn_grouped["VOTI_LISTA"] / df_topn_grouped["VOTANTI"]
     
-    res = df_final[df_final["SHAPE_AREA"] > 1]
-    
-    ax = res.plot(x="VOTANTI", y="perc_voto", kind="scatter", logx=True)
-    ax.figure.savefig(f"plots/top_{n}_partiesV.png")
-    
-    
-    ax = res.plot(x="SHAPE_AREA", y="perc_voto", kind="scatter", logx=True)
-    ax.figure.savefig(f"plots/top_{n}_partiesA")
-    
-    res["DENSITY"] = res["VOTANTI"]/res["SHAPE_AREA"]
-    ax = res.plot(x="DENSITY", y="perc_voto", kind="scatter", logx=True)
-    ax.figure.savefig(f"plots/top_{n}_partiesD")
+    # Get unique CIRCOSCRIZIONE values
+    circoscrizioni = erp['CIRCOSCRIZIONE'].unique()
+
+    # Determine the grid size for subplots
+    n = len(circoscrizioni)
+    cols = 2
+    rows = (n + 1) // cols
+
+    # Create subplots
+    fig, axes = plt.subplots(rows, cols, figsize=(15, 5 * rows))
+    axes = axes.flatten()  # Flatten in case we have more than one row
+
+    # Plot each CIRCOSCRIZIONE
+    for i, circoscrizione in enumerate(circoscrizioni):
+        df_circoscrizione = df_topn_grouped[df_topn_grouped['CIRCOSCRIZIONE'] == circoscrizione]
+        
+        axes[i].scatter(y=df_circoscrizione['perc_voti'], x=df_circoscrizione['VOTANTI'], 
+                        c=df_circoscrizione['color'], s=[10 for _ in range(len(df_circoscrizione["color"],
+                        ))])
+        axes[i].set_title(f'{circoscrizione}')
+        axes[i].set_xscale('log')
+        axes[i].set_xlabel('votanti')
+        axes[i].set_ylabel('% lista maggiore')
+
+    # Remove any empty subplots if the number of CIRCOSCRIZIONE is odd
+    for j in range(i + 1, len(axes)):
+        fig.delaxes(axes[j])
+
+    plt.tight_layout(pad=5.0)
+    plt.show()
 
 # how are the votes distributed in comuni with different area?
 
