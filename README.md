@@ -66,3 +66,5 @@ correlation was kept at the same values roughly + some variation
 perhaps there is too much noise, clustering by parties might make this better
 
 - how much compromise must parties have to reach a high consensus? depending on the circoscrizione this number changes.
+
+- checking how polarized elections are in different parts of italy

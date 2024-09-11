@@ -43,7 +43,7 @@ for l in erp["LISTA"].unique():
         party_colors[l] = "#000000"
         
 # best m parties per circoscrizione?
-m = 3
+m = 2
 for n in range(1, m+1):
 
 
@@ -61,7 +61,6 @@ for n in range(1, m+1):
     
     # Select the top 2 parties for each comune
     df_topn = df_grouped.groupby(["CIRCOSCRIZIONE", "PROVINCIA", 'COMUNE'], as_index=False).head(n)
-
     print(df_topn)
     print(df_topn.columns)
     
@@ -80,13 +79,20 @@ for n in range(1, m+1):
         return weighted_color_hex
 
     # Apply the weighted color calculation
-    df_topn_grouped = df_topn.groupby(["CIRCOSCRIZIONE", "PROVINCIA", 'COMUNE'], as_index=False).agg({
-        'VOTI_LISTA': 'sum', 
-        'VOTANTI': 'first', 
-        "color": lambda x: weighted_color(df_topn.loc[x.index, 'VOTI_LISTA'], x)})
+    if n>1:
+        df_topn_grouped = df_topn.groupby(["CIRCOSCRIZIONE", "PROVINCIA", 'COMUNE'], as_index=False).agg({
+            'VOTI_LISTA': lambda x: [el for el in x][0] - [el for el in x][1], # just change this in sum for old plot
+            'VOTANTI': 'first', 
+            "color": 'first'}) # lambda x: weighted_color(df_topn.loc[x.index, 'VOTI_LISTA'], x)})
+    else:
+        df_topn_grouped = df_topn.groupby(["CIRCOSCRIZIONE", "PROVINCIA", 'COMUNE'], as_index=False).agg({
+            'VOTI_LISTA': 'sum', # just change this in sum for old plot
+            'VOTANTI': 'first', 
+            "color": 'first'}) # lambda x: weighted_color(df_topn.loc[x.index, 'VOTI_LISTA'], x)})
 
+        
     df_topn_grouped["perc_voti"] = df_topn_grouped["VOTI_LISTA"] / df_topn_grouped["VOTANTI"]
-    
+
     # Get unique CIRCOSCRIZIONE values
     circoscrizioni = erp['CIRCOSCRIZIONE'].unique()
 
@@ -102,14 +108,22 @@ for n in range(1, m+1):
     # Plot each CIRCOSCRIZIONE
     for i, circoscrizione in enumerate(circoscrizioni):
         df_circoscrizione = df_topn_grouped[df_topn_grouped['CIRCOSCRIZIONE'] == circoscrizione]
-        
-        axes[i].scatter(y=df_circoscrizione['perc_voti'], x=df_circoscrizione['VOTANTI'], 
-                        c=df_circoscrizione['color'], s=[10 for _ in range(len(df_circoscrizione["color"],
-                        ))])
-        axes[i].set_title(f'{circoscrizione}')
-        axes[i].set_xscale('log')
-        axes[i].set_xlabel('votanti')
-        axes[i].set_ylabel('% lista maggiore')
+        if n > 1:
+            axes[i].scatter(y=df_circoscrizione['perc_voti'], x=df_circoscrizione['VOTANTI'], 
+                            c=df_circoscrizione['color'], s=[10 for _ in range(len(df_circoscrizione["color"],
+                            ))])
+            axes[i].set_title(f'{circoscrizione}')
+            axes[i].set_xscale('log')
+            axes[i].set_xlabel('Voters')
+            axes[i].set_ylabel('% Diff. between two biggest parties')
+        else:
+            axes[i].scatter(y=df_circoscrizione['perc_voti'], x=df_circoscrizione['VOTANTI'], 
+                            c=df_circoscrizione['color'], s=[10 for _ in range(len(df_circoscrizione["color"],
+                            ))])
+            axes[i].set_title(f'{circoscrizione}')
+            axes[i].set_xscale('log')
+            axes[i].set_xlabel('Voters')
+            axes[i].set_ylabel('% Biggest party')
 
     # Remove any empty subplots if the number of CIRCOSCRIZIONE is odd
     for j in range(i + 1, len(axes)):
@@ -117,19 +131,4 @@ for n in range(1, m+1):
 
     plt.tight_layout(pad=5.0)
     plt.show()
-
-# how are the votes distributed in comuni with different area?
-
-''' 
-take the votes taken by each candidate in each town and 
-compare it with how many votes were gotten in that town,
-how different is that ratio compared to the circoscrizione?
-
-a towny candidates takes 95% of the votes in a comune, but 90% of its votes come from these comuni.
-'''
-
-
-## indetify towny cnadidates
-with open("data/candidates_clean.csv", "r") as f:
-    cndts = pd.read_csv(f) 
 

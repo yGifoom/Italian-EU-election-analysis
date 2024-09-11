@@ -20,13 +20,14 @@ def b_clean(s:str) -> str:
 # to create a useful datastruct with all the candidates info
 def congregate(congregated: list, i: int)-> None:
     for el in congregated:
-        if data["nome e cognome"][i] == el["nome e cognome"]:
+        if data["nome"][i] + data["cognome"][i] == el["nome"] + el["cognome"]:
             if int(data["PREFERENZE"][i]) > 0:
                 el["preferenze"][data["comune"][i]] = data["PREFERENZE"][i]
                 return
     if int(data["PREFERENZE"][i]) > 0:
         el = {
-            "nome e cognome": data["nome e cognome"][i],
+            "nome": data["nome"][i],
+            "cognome": data["cognome"][i],
             "partito": data["descrlista"][i],
             "datanascita": data["datanascita"][i],
             "luogonascita": data["luogonascita"][i],
@@ -44,7 +45,7 @@ with open("data/preferences_clean.csv", "r") as f:
 
 data = prfcs.to_dict()
 
-for i in range(len(data["nome e cognome"])):
+for i in range(len(data["nome"])):
     congregate(cndts, i)
 
 ## decomment for csv

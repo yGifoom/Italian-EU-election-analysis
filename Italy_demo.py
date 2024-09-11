@@ -185,10 +185,6 @@ filter = {
 
 prfz.replace(filter, regex=True, inplace=True)
 
-
-prfz["nome e cognome"] = prfz["nome"] + " " + (prfz["cognome"])
-prfz = prfz.drop(["nome","cognome"], axis=1)
-
 lg_n = set(prfz["luogonascita"])
 print(f"here are all the non italian birthplaces: \n{lg_n.difference(comuni_i)}")
 ## decomment for csv
